@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 
+	yandexcloudkms "github.com/yandex-cloud/vault-kms-wrapper/v2"
+
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-kms-wrapping/entropy/v2"
@@ -260,6 +262,9 @@ func configureWrapper(configKMS *KMS, infoKeys *[]string, info *map[string]strin
 	case wrapping.WrapperTypePkcs11:
 		return nil, fmt.Errorf("KMS type 'pkcs11' requires the Vault Enterprise HSM binary")
 
+	case yandexcloudkms.WrapperTypeYandexCloudKms:
+		wrapper, kmsInfo, err = GetYandexCloudKMSFunc(configKMS, opts...)
+
 	default:
 		return nil, fmt.Errorf("Unknown KMS type %q", configKMS.Type)
 	}
@@ -419,7 +424,23 @@ var GetTransitKMSFunc = func(kms *KMS, opts ...wrapping.Option) (wrapping.Wrappe
 	return wrapper, info, nil
 }
 
-func createSecureRandomReader(_ *SharedConfig, _ []*EntropySourcerInfo, _ hclog.Logger) (io.Reader, error) {
+func GetYandexCloudKMSFunc(kms *KMS, opts ...wrapping.Option) (wrapping.Wrapper, map[string]string, error) {
+	wrapper := yandexcloudkms.NewWrapper()
+	wrapperInfo, err := wrapper.SetConfig(context.Background(), append(opts, wrapping.WithConfigMap(kms.Config))...)
+	if err != nil {
+		// If the error is any other than logical.KeyNotFoundError, return the error
+		if !errwrap.ContainsType(err, new(logical.KeyNotFoundError)) {
+			return nil, nil, err
+		}
+	}
+	info := make(map[string]string)
+	if wrapperInfo != nil {
+		info["Yandex.Cloud KMS KeyID"] = wrapperInfo.Metadata["kms_key_id"]
+	}
+	return wrapper, info, nil
+}
+
+func createSecureRandomReader(conf *SharedConfig, wrapper wrapping.Wrapper) (io.Reader, error) {
 	return rand.Reader, nil
 }
 
