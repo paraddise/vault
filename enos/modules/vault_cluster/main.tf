@@ -15,6 +15,10 @@ terraform {
 data "enos_environment" "localhost" {}
 
 locals {
+  distro_version_sles = {
+    "v15_sp4_standard" = "15.4"
+    "v15_sp5_standard" = "15.5"
+  }
   audit_device_file_path = "/var/log/vault/vault_audit.log"
   audit_socket_port      = "9090"
   bin_path               = "${var.install_dir}/vault"
@@ -37,6 +41,13 @@ locals {
     "pkcs11" = null
   }
   leader = toset(slice(local.instances, 0, 1))
+  netcat_command = {
+    amzn          = "nc"
+    opensuse-leap = "netcat"
+    rhel          = "nc"
+    sles          = "nc"
+    ubuntu        = "netcat"
+  }
   recovery_shares = {
     "awskms" = 5
     "shamir" = null
@@ -48,6 +59,16 @@ locals {
     "pkcs11" = 3
   }
   vault_service_user = "vault"
+}
+
+resource "enos_host_info" "hosts" {
+  for_each = var.target_hosts
+
+  transport = {
+    ssh = {
+      host = each.value.public_ip
+    }
+  }
 }
 
 resource "enos_bundle_install" "consul" {
@@ -66,8 +87,21 @@ resource "enos_bundle_install" "consul" {
   }
 }
 
+# We run install_packages before we install Vault because for some combinations of
+# certain Linux distros and artifact types (e.g. SLES and RPM packages), there may
+# be packages that are required to perform Vault installation (e.g. openssl).
+module "install_packages" {
+  source = "../install_packages"
+
+  hosts    = var.target_hosts
+  packages = var.packages
+}
+
 resource "enos_bundle_install" "vault" {
   for_each = var.target_hosts
+  depends_on = [
+    module.install_packages, // Don't race for the package manager locks with install_packages
+  ]
 
   destination = var.install_dir
   release     = var.release == null ? var.release : merge({ product = "vault" }, var.release)
@@ -81,22 +115,17 @@ resource "enos_bundle_install" "vault" {
   }
 }
 
-module "install_packages" {
-  source = "../install_packages"
-  depends_on = [
-    enos_bundle_install.vault, // Don't race for the package manager locks with vault install
-  ]
-
-  hosts    = var.target_hosts
-  packages = var.packages
-}
-
 resource "enos_consul_start" "consul" {
   for_each = enos_bundle_install.consul
 
   bin_path = local.consul_bin_path
   data_dir = var.consul_data_dir
   config = {
+    # GetPrivateInterfaces is a go-sockaddr template that helps Consul get the correct
+    # addr in all of our default cases. This is required in the case of Amazon Linux,
+    # because amzn2 has a default docker listener that will make Consul try to use the
+    # incorrect addr.
+    bind_addr        = "{{ GetPrivateInterfaces | include \"type\" \"IP\" | sort \"default\" |  limit 1 | attr \"address\"}}"
     data_dir         = var.consul_data_dir
     datacenter       = "dc1"
     retry_join       = ["provider=aws tag_key=${var.backend_cluster_tag_key} tag_value=${var.backend_cluster_name}"]
@@ -122,6 +151,7 @@ module "start_vault" {
 
   depends_on = [
     enos_consul_start.consul,
+    module.install_packages,
     enos_bundle_install.vault,
   ]
 
@@ -283,7 +313,8 @@ resource "enos_remote_exec" "start_audit_socket_listener" {
   ])
 
   environment = {
-    SOCKET_PORT = local.audit_socket_port
+    NETCAT_COMMAND = local.netcat_command[enos_host_info.hosts[each.key].distro]
+    SOCKET_PORT    = local.audit_socket_port
   }
 
   scripts = [abspath("${path.module}/scripts/start-audit-socket-listener.sh")]
