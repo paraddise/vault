@@ -13153,24 +13153,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ember-cli-typescript@npm:^5.2.1":
-  version: 5.2.1
-  resolution: "ember-cli-typescript@npm:5.2.1"
-  dependencies:
-    ansi-to-html: ^0.6.15
-    broccoli-stew: ^3.0.0
-    debug: ^4.0.0
-    execa: ^4.0.0
-    fs-extra: ^9.0.1
-    resolve: ^1.5.0
-    rsvp: ^4.8.1
-    semver: ^7.3.2
-    stagehand: ^1.0.0
-    walk-sync: ^2.2.0
-  checksum: b4306b37e9a9e070cc61a67acf404b30636ad2681379589fbc349c7e83158a7b634d792ab5af4cd4dd0770eecb8a901fa84d29a15167826db9c97b664a115df0
-  languageName: node
-  linkType: hard
-
 "ember-cli-version-checker@npm:^2.1.0, ember-cli-version-checker@npm:^2.1.2":
   version: 2.2.0
   resolution: "ember-cli-version-checker@npm:2.2.0"
@@ -24845,7 +24827,6 @@ __metadata:
     ember-cli-sri: "meirish/ember-cli-sri#rooturl"
     ember-cli-string-helpers: 6.1.0
     ember-cli-terser: ^4.0.2
-    ember-cli-typescript: ^5.2.1
     ember-composable-helpers: 5.0.0
     ember-concurrency: 2.3.4
     ember-copy: 2.0.1
