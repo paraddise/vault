@@ -2468,7 +2468,7 @@ func (s standardUnsealStrategy) unseal(ctx context.Context, logger log.Logger, c
 
 		// not waiting on wg to avoid changing existing behavior
 		var wg sync.WaitGroup
-		if err := c.setupActivityLog(ctx, &wg); err != nil {
+		if err := c.setupActivityLog(ctx, &wg, false); err != nil {
 			return err
 		}
 
