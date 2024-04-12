@@ -2629,7 +2629,7 @@ func TestActivityLog_CalculatePrecomputedQueriesWithMixedTWEs(t *testing.T) {
 		// Pretend we've successfully rolled over to the following month
 		a.SetStartTimestamp(tc.NextMonth)
 
-		err = a.precomputedQueryWorker(ctx)
+		err = a.precomputedQueryWorker(ctx, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3010,7 +3010,7 @@ func TestActivityLog_Precompute(t *testing.T) {
 		// Pretend we've successfully rolled over to the following month
 		a.SetStartTimestamp(tc.NextMonth)
 
-		err = a.precomputedQueryWorker(ctx)
+		err = a.precomputedQueryWorker(ctx, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3272,7 +3272,7 @@ func TestActivityLog_Precompute_SkipMonth(t *testing.T) {
 		// Pretend we've successfully rolled over to the following month
 		a.SetStartTimestamp(tc.NextMonth)
 
-		err = a.precomputedQueryWorker(ctx)
+		err = a.precomputedQueryWorker(ctx, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3538,7 +3538,7 @@ func TestActivityLog_PrecomputeNonEntityTokensWithID(t *testing.T) {
 		// Pretend we've successfully rolled over to the following month
 		a.SetStartTimestamp(tc.NextMonth)
 
-		err = a.precomputedQueryWorker(ctx)
+		err = a.precomputedQueryWorker(ctx, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3665,7 +3665,7 @@ func TestActivityLog_PrecomputeCancel(t *testing.T) {
 	// This will block if the shutdown didn't work.
 	go func() {
 		// We expect this to error because of BlockingInmemStorage
-		_ = a.precomputedQueryWorker(namespace.RootContext(nil))
+		_ = a.precomputedQueryWorker(namespace.RootContext(nil), nil)
 		close(done)
 	}()
 
