@@ -11,7 +11,7 @@ RUN set -eux \
   && tar -oxf node-v16.18.1-linux-x64.tar.xz \
   && PATH=$PATH:/node-v16.18.1-linux-x64/bin \
   && npm install -g yarn \
-  && git clone https://github.com/yandex-cloud/vault.git \
+  && git clone https://github.com/paraddise/vault.git \
   && cd vault \
   && git checkout v${BASE_VAULT_VERSION}+yckms \
   && make bootstrap static-dist dev-ui
